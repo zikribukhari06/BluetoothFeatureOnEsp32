@@ -7,8 +7,8 @@
 #define CHARACTERISTIC_UUID "dbb5030e-fb4b-4ef3-9ba8-377ddad5ed5c"
 
 // Class Callback yang berjalan OTOMATIS saat HP mengirim data ke ESP32
-class MyCallbacks: public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic) {
+class MyCallbacks: public BLECharacteristicCallbacks { // melakukan pewarisan terhadap MyCallbacks terhadap dengan induk BLECharactericCallbacks, sehingga MyCallbacks akan mewarisi semua hal dari  BLECharacteristicCallbacks
+    void onWrite(BLECharacteristic *pCharacteristic) { // BLE terdapat event onWrite, onRead, onStatus
       String value = pCharacteristic->getValue(); // Ambil data dari HP
 
       if (value.length() > 0) {
@@ -24,6 +24,23 @@ class MyCallbacks: public BLECharacteristicCallbacks {
           Serial.println("-> LED Bawaan Mati!");
         }
       }
+    }
+};
+int hitunganRead = 0;
+
+// Class Callback khusus untuk menangani request READ dari HP
+class SensorCallbacks: public BLECharacteristicCallbacks {
+    void onRead(BLECharacteristic *pCharacteristic) {
+      hitunganRead++;
+      
+      // Simulasi baca data (misal: hitung berapa kali HP udah minta data)
+      String dataKirim = "Data ke-" + String(hitunganRead);
+
+      // Set nilai terbaru ke Characteristic SEBELUM dikirim ke HP
+      pCharacteristic->setValue(dataKirim.c_str());
+
+      Serial.print("Event onRead terpicu! Mengirim: ");
+      Serial.println(dataKirim);
     }
 };
 void setup() {
@@ -43,6 +60,7 @@ void setup() {
                                           BLECharacteristic::PROPERTY_WRITE
   );
 // Hubungkan fungsi Callback ke Characteristic
+  pCharacteristic->setCallbacks(new SensorCallbacks());
   pCharacteristic->setCallbacks(new MyCallbacks());
   // membuat ini nilai awal
   pCharacteristic->setValue("BLE berhail di-Set up");
